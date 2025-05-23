@@ -3,4 +3,7 @@ trigger OrderTrigger on Order (before insert, before update) {
     //  de validation. Cette méthode doit s'assurer que le nombre minimum de produits est respecté en fonction du type
     //  de client (Particulier ou Professionnel).
     //  TODO: Selectionner le meilleur transporteur selon le choix fait sur la commande
+    if (Trigger.isBefore) {
+        OrderService.validateOrders(Trigger.new);
+    }
 }
