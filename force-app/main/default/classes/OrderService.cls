@@ -1,15 +1,47 @@
 public with sharing class OrderService {
 
     // Méthode pour valider une livraison
-    public static void validateLivraison(Livraison__c livraison) {
-        if (String.isBlank(livraison.Zone__c)) {
-            throw new AuraHandledException('La zone de livraison doit être renseignée.');
-        }
+   @isTest
+static void testValidateLivraison_OK() {
+    Prix_Transporteur__c prix = new Prix_Transporteur__c(
+        Zone__c = 'France',
+        Tarif__c = 100.0
+    );
+    insert prix;
 
-        if (livraison.Prix_Transporteur__c == null) {
-            throw new AuraHandledException('Un Prix Transporteur doit être sélectionné.');
-        }
+    Livraison__c livraison = new Livraison__c(
+        Zone__c = 'France',
+        Prix_Transporteur__c = prix.Id
+    );
+
+    Test.startTest();
+    OrderService.validateLivraison(livraison);
+    Test.stopTest();
+}
+
+@isTest
+static void testValidateLivraison_ZoneVide() {
+    Prix_Transporteur__c prix = new Prix_Transporteur__c(
+        Zone__c = 'France',
+        Tarif__c = 100.0
+    );
+    insert prix;
+
+    Livraison__c livraison = new Livraison__c(
+        Zone__c = '',
+        Prix_Transporteur__c = prix.Id
+    );
+
+    Test.startTest();
+    try {
+        OrderService.validateLivraison(livraison);
+        System.assert(false, 'Exception attendue');
+    } catch (AuraHandledException e) {
+        System.assertEquals('La zone de livraison doit être renseignée.', e.getMessage());
     }
+    Test.stopTest();
+}
+
 
     // Exemple de logique métier réutilisable
     public static Boolean isZoneValide(Livraison__c livraison) {
