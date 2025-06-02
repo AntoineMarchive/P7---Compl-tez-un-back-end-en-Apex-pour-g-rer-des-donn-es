@@ -9,7 +9,7 @@ public with sharing class AccountSelector {
         // Requête SOQL qui sélectionne certaines colonnes de l’objet standard Account
         // Elle filtre sur l’Id reçu en paramètre
         return [
-            SELECT Id, Name, Type, Industry, BillingCity, BillingCountry, Phone, Website
+            SELECT Id, Name, Type, Industry, BillingCity, BillingCountry
             FROM Account
             WHERE Id = :accountId
         ];

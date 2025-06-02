@@ -1,47 +1,15 @@
 public with sharing class OrderService {
 
     // Méthode pour valider une livraison
-   @isTest
-static void testValidateLivraison_OK() {
-    Prix_Transporteur__c prix = new Prix_Transporteur__c(
-        Zone__c = 'France',
-        Tarif__c = 100.0
-    );
-    insert prix;
+    public static void validateLivraison(Livraison__c livraison) {
+        if (String.isBlank(livraison.Zone__c)) {
+            throw new AuraHandledException('La zone de livraison doit être renseignée.');
+        }
 
-    Livraison__c livraison = new Livraison__c(
-        Zone__c = 'France',
-        Prix_Transporteur__c = prix.Id
-    );
-
-    Test.startTest();
-    OrderService.validateLivraison(livraison);
-    Test.stopTest();
-}
-
-@isTest
-static void testValidateLivraison_ZoneVide() {
-    Prix_Transporteur__c prix = new Prix_Transporteur__c(
-        Zone__c = 'France',
-        Tarif__c = 100.0
-    );
-    insert prix;
-
-    Livraison__c livraison = new Livraison__c(
-        Zone__c = '',
-        Prix_Transporteur__c = prix.Id
-    );
-
-    Test.startTest();
-    try {
-        OrderService.validateLivraison(livraison);
-        System.assert(false, 'Exception attendue');
-    } catch (AuraHandledException e) {
-        System.assertEquals('La zone de livraison doit être renseignée.', e.getMessage());
+        if (livraison.Prix_Transporteur__c == null) {
+            throw new AuraHandledException('Un Prix Transporteur doit être sélectionné.');
+        }
     }
-    Test.stopTest();
-}
-
 
     // Exemple de logique métier réutilisable
     public static Boolean isZoneValide(Livraison__c livraison) {
@@ -49,6 +17,7 @@ static void testValidateLivraison_ZoneVide() {
         return zonesAutorisees.contains(livraison.Zone__c);
     }
 
+    // Validation d’une liste de commandes selon les règles métier
     public static void validateOrders(List<Order> orders) {
         Set<Id> accountIds = new Set<Id>();
         Set<Id> orderIds = new Set<Id>();
@@ -62,12 +31,12 @@ static void testValidateLivraison_ZoneVide() {
             }
         }
 
-        // Récupère les types de compte (particulier ou professionnel)
+        // Récupère les types de compte
         Map<Id, Account> accountMap = new Map<Id, Account>(
             [SELECT Id, Type_de_Compte__c FROM Account WHERE Id IN :accountIds]
         );
 
-        // Récupère les quantités de lignes de commande par commande
+        // Récupère les quantités de lignes de commande
         Map<Id, Decimal> orderQuantities = new Map<Id, Decimal>();
         for (AggregateResult ar : [
             SELECT OrderId, SUM(Quantity) total
@@ -78,7 +47,7 @@ static void testValidateLivraison_ZoneVide() {
             orderQuantities.put((Id)ar.get('OrderId'), (Decimal)ar.get('total'));
         }
 
-        // Applique les regles selon le type de compte
+        // Applique les règles selon le type de compte
         for (Order ord : orders) {
             Account acc = accountMap.get(ord.AccountId);
             Decimal totalProduits = orderQuantities.containsKey(ord.Id) ? orderQuantities.get(ord.Id) : 0;
@@ -92,5 +61,34 @@ static void testValidateLivraison_ZoneVide() {
                 }
             }
         }
+    }
+
+    // Méthode appelée depuis le composant LWC pour sauvegarder le choix du transporteur
+    @AuraEnabled
+    public static void saveTransporterChoice(Id orderId, String option) {
+        if (orderId == null || String.isBlank(option)) {
+            throw new AuraHandledException('Paramètres invalides.');
+        }
+
+        Order ord = [SELECT Id, Transporter_Choice__c FROM Order WHERE Id = :orderId LIMIT 1];
+        ord.Transporter_Choice__c = option;
+        update ord;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static Livraison__c getLivraisonForOrder(Id orderId) {
+        List<Livraison__c> livs = [
+            SELECT Id, Zone__c, Prix_Transporteur__r.Tarif__c, Prix_Transporteur__r.Name
+            FROM Livraison__c
+            WHERE Order__c = :orderId
+            ORDER BY CreatedDate DESC
+            LIMIT 1
+        ];
+
+        if (!livs.isEmpty()) {
+            return livs[0];
+        }
+
+        return null;
     }
 }

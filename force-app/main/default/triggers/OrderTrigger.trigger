@@ -3,10 +3,21 @@ trigger OrderTrigger on Order (after update) {
 
     for (Order ord : Trigger.new) {
         Order old = Trigger.oldMap.get(ord.Id);
+
         if (ord.Transporter_Choice__c != old.Transporter_Choice__c) {
+
+            // Récupération de la zone depuis l’account associé
+            Account acc = [SELECT Id, BillingCountry FROM Account WHERE Id = :ord.AccountId LIMIT 1];
+            String zone = acc.BillingCountry;
+
+            // Appel à la logique de sélection du transporteur
+            Id prixTransporteurId = TransporterSelector.getBestPrixTransporteurIdForZone(zone);
+
             livraisons.add(new Livraison__c(
                 Order__c = ord.Id,
-                Mode_de_Livraison__c = ord.Transporter_Choice__c
+                Mode_de_Livraison__c = ord.Transporter_Choice__c,
+                Zone__c = zone,
+                Prix_Transporteur__c = prixTransporteurId
             ));
         }
     }

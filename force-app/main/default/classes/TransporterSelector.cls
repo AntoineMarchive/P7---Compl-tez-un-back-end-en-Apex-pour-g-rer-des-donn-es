@@ -16,12 +16,22 @@ public with sharing class TransporterSelector {
             LIMIT 1
         ];
 
-        // Retourner l'Id du meilleur prix transporteur s'il existe
+        // Retourne l'Id du meilleur prix transporteur s'il existe
         if (!candidats.isEmpty()) {
             return candidats[0].Id;
         }
 
         // Aucun transporteur trouvé pour cette zone
         return null;
+    }
+
+    // Retourne tous les transporteurs
+    @AuraEnabled(cacheable=true)
+    public static List<Prix_Transporteur__c> getAllTransporters() {
+        return [
+            SELECT Id, Name, Tarif__c, Zone__c, Transporteur__r.Name 
+            FROM Prix_Transporteur__c
+            ORDER BY Name
+        ];
     }
 }

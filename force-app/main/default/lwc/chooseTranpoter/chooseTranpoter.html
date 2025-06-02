@@ -2,7 +2,8 @@
     <template if:true={hasPermission}>
         <div class="slds-box slds-theme_default">
             <h2 class="slds-text-heading_small">Choix du transporteur</h2>
-            <!-- Composant standard LWC pour afficher un groupe d’options radio -->
+
+            <!-- Options de base -->
             <lightning-radio-group
                 name="transporter"
                 label="Sélectionnez un mode de livraison"
@@ -11,6 +12,18 @@
                 onchange={handleChange}
                 type="radio">
             </lightning-radio-group>
+
+            <!-- Liste manuelle des transporteurs si besoin -->
+            <lightning-combobox
+                name="manualTransporter"
+                label="Ou choisissez un transporteur"
+                placeholder="-- Sélectionner un transporteur --"
+                options={transporterList}
+                value={manualTransporterId}
+                onchange={handleTransporterSelect}
+                class="slds-m-top_small">
+            </lightning-combobox>
+
             <lightning-button
                 class="slds-m-top_medium"
                 variant="brand"
@@ -19,6 +32,7 @@
             </lightning-button>
         </div>
     </template>
+
     <template if:false={hasPermission}>
         <p class="slds-text-color_error">Vous n’avez pas les droits pour envoyer une commande.</p>
     </template>
