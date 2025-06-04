@@ -3,6 +3,8 @@ import { LightningElement, api, wire } from 'lwc';
 import hasPermission from '@salesforce/customPermission/Can_Send_Order';
 import saveTransporterChoice from '@salesforce/apex/OrderService.saveTransporterChoice';
 import getAllTransporters from '@salesforce/apex/TransporterSelector.getAllTransporters';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+
 
 
 
@@ -41,27 +43,39 @@ export default class ChooseTransporter extends LightningElement {
         this.selectedOption = null;
     }
 
+    showToast(title, message, variant) {
+        const event = new ShowToastEvent({
+            title: title,
+            message: message,
+            variant: variant, // 'success' | 'error' | 'warning' | 'info'
+            mode: 'dismissable'
+     });
+        this.dispatchEvent(event);
+    }
+
+
     handleSubmit() {
     if (!this.hasPermission) {
-        alert("Vous n'avez pas la permission d'envoyer une commande.");
+        this.showToast('Permission refusée', "Vous n'avez pas la permission d'envoyer une commande.", 'error');
         return;
     }
 
     const optionToSend = this.selectedOption || this.manualTransporterId;
 
-        if (!optionToSend) {
-            alert("Veuillez choisir une option ou un transporteur.");
-            return;
-        }
+    if (!optionToSend) {
+        this.showToast('Sélection manquante', 'Veuillez choisir une option ou un transporteur.', 'warning');
+        return;
+    }
 
-    saveTransporterChoice({ orderId: this.recordId, option: this.selectedOption })
+    saveTransporterChoice({ orderId: this.recordId, option: optionToSend })
         .then(() => {
-            alert('Commande envoyée avec succès !');
+            this.showToast('Succès', 'Commande envoyée avec succès !', 'success');
         })
         .catch(error => {
             console.error(error);
-            alert('Erreur lors de l’envoi de la commande.');
+            this.showToast('Erreur', error?.body?.message || "Erreur lors de l’envoi de la commande.", 'error');
+
         });
-}
+    }
 
 }
