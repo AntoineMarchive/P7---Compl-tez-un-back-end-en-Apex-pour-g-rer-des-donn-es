@@ -21,6 +21,10 @@ export default class ChooseTransporter extends LightningElement {
         { label: 'Option la moins chère', value: 'cheapest' }
     ]; // Choix à afficher dans le radio group
 
+    get isTransporterListEmpty() {
+    return this.transporterList.length === 0;
+    }
+
     @wire(getAllTransporters)
     wiredTransporters({ error, data }) {
         if (data) {
