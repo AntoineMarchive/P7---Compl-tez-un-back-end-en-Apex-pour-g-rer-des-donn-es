@@ -65,30 +65,22 @@ public with sharing class OrderService {
 
     // Méthode appelée depuis le composant LWC pour sauvegarder le choix du transporteur
     @AuraEnabled
-    public static void saveTransporterChoice(Id orderId, String option) {
-        if (orderId == null || String.isBlank(option)) {
-            throw new AuraHandledException('Paramètres invalides.');
-        }
-
-        Order ord = [SELECT Id, Transporter_Choice__c FROM Order WHERE Id = :orderId LIMIT 1];
-        ord.Transporter_Choice__c = option;
-        update ord;
+public static void saveTransporterChoice(Id orderId, Id prixTransporteurId) {
+    if (orderId == null || prixTransporteurId == null) {
+        throw new AuraHandledException('Paramètres invalides.');
     }
 
-    @AuraEnabled(cacheable=true)
-    public static Livraison__c getLivraisonForOrder(Id orderId) {
-        List<Livraison__c> livs = [
-            SELECT Id, Zone__c, Prix_Transporteur__r.Tarif__c, Prix_Transporteur__r.Name
-            FROM Livraison__c
-            WHERE Order__c = :orderId
-            ORDER BY CreatedDate DESC
-            LIMIT 1
-        ];
+    Order ord = [SELECT Id, AccountId FROM Order WHERE Id = :orderId LIMIT 1];
+    Account acc = [SELECT BillingCountry FROM Account WHERE Id = :ord.AccountId LIMIT 1];
 
-        if (!livs.isEmpty()) {
-            return livs[0];
-        }
+    Livraison__c livraison = new Livraison__c(
+        Order__c = orderId,
+        Prix_Transporteur__c = prixTransporteurId,
+        Zone__c = acc.BillingCountry,
+        Mode_de_Livraison__c = 'Choisi manuellement'
+    );
 
-        return null;
-    }
+    insert livraison;
+}
+
 }

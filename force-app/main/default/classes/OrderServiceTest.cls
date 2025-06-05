@@ -69,26 +69,83 @@ private class OrderServiceTest {
     }
 
     @isTest
-    static void testValidateOrders_OK() {
+    static void testValidateOrders_RulesOK_Particulier() {
+        Product2 prod = new Product2(Name = 'Produit Valide', isActive = true);
+        insert prod;
+
+        Id pbId = Test.getStandardPricebookId();
+        PricebookEntry pbe = new PricebookEntry(
+            Pricebook2Id = pbId,
+            Product2Id = prod.Id,
+            UnitPrice = 10,
+            IsActive = true
+        );
+        insert pbe;
+
         Account acc = new Account(Name = 'Client Test', Type_de_Compte__c = 'Particulier');
         insert acc;
 
         Order ord = new Order(
             AccountId = acc.Id,
             Status = 'Draft',
-            EffectiveDate = System.today()
+            EffectiveDate = Date.today(),
+            Pricebook2Id = pbId
         );
         insert ord;
 
         OrderItem item = new OrderItem(
             OrderId = ord.Id,
             Quantity = 3,
-            UnitPrice = 10
+            UnitPrice = 10,
+            PricebookEntryId = pbe.Id
         );
         insert item;
 
         Test.startTest();
         OrderService.validateOrders(new List<Order>{ ord });
+        Test.stopTest();
+    }
+
+    @isTest
+    static void testValidateOrders_KO_Particulier_SousQuota() {
+        Product2 prod = new Product2(Name = 'Produit KO', isActive = true);
+        insert prod;
+
+        Id pbId = Test.getStandardPricebookId();
+        PricebookEntry pbe = new PricebookEntry(
+            Pricebook2Id = pbId,
+            Product2Id = prod.Id,
+            UnitPrice = 10,
+            IsActive = true
+        );
+        insert pbe;
+
+        Account acc = new Account(Name = 'Client KO', Type_de_Compte__c = 'Particulier');
+        insert acc;
+
+        Order ord = new Order(
+            AccountId = acc.Id,
+            Status = 'Draft',
+            EffectiveDate = Date.today(),
+            Pricebook2Id = pbId
+        );
+        insert ord;
+
+        OrderItem item = new OrderItem(
+            OrderId = ord.Id,
+            Quantity = 2,
+            UnitPrice = 10,
+            PricebookEntryId = pbe.Id
+        );
+        insert item;
+
+        Test.startTest();
+        try {
+            OrderService.validateOrders(new List<Order>{ ord });
+            System.assert(false, 'Erreur attendue pour un particulier avec < 3 produits');
+        } catch (Exception e) {
+            System.assert(e.getMessage().contains('particulier doit commander'));
+        }
         Test.stopTest();
     }
 
@@ -103,34 +160,47 @@ private class OrderServiceTest {
         Test.startTest();
         try {
             OrderService.validateOrders(new List<Order>{ ord });
+            System.assert(true, 'addError devrait empêcher le traitement');
         } catch (Exception e) {
-            System.assert(true, 'addError devrait empêcher la suite du traitement');
+            System.assert(true);
         }
         Test.stopTest();
     }
 
     @isTest
     static void testSaveTransporterChoice_OK() {
+        Account acc = new Account(Name = 'Client', BillingCountry = 'France');
+        insert acc;
+
         Order ord = new Order(
             Status = 'Draft',
             EffectiveDate = System.today(),
-            AccountId = [SELECT Id FROM Account LIMIT 1].Id
+            AccountId = acc.Id
         );
         insert ord;
 
+        Prix_Transporteur__c prix = new Prix_Transporteur__c(
+            Zone__c = 'France',
+            Tarif__c = 20.0
+        );
+        insert prix;
+
         Test.startTest();
-        OrderService.saveTransporterChoice(ord.Id, 'fastest');
+        OrderService.saveTransporterChoice(ord.Id, prix.Id);
         Test.stopTest();
 
-        Order updated = [SELECT Transporter_Choice__c FROM Order WHERE Id = :ord.Id];
-        System.assertEquals('fastest', updated.Transporter_Choice__c);
+        Livraison__c livraison = [SELECT Id, Zone__c, Prix_Transporteur__c, Mode_de_Livraison__c
+                                  FROM Livraison__c WHERE Order__c = :ord.Id LIMIT 1];
+        System.assertEquals('France', livraison.Zone__c);
+        System.assertEquals(prix.Id, livraison.Prix_Transporteur__c);
+        System.assertEquals('Choisi manuellement', livraison.Mode_de_Livraison__c);
     }
 
     @isTest
     static void testSaveTransporterChoice_invalid() {
         Test.startTest();
         try {
-            OrderService.saveTransporterChoice(null, '');
+            OrderService.saveTransporterChoice(null, null);
             System.assert(false, 'Une exception devait être levée');
         } catch (AuraHandledException e) {
             System.assertEquals('Paramètres invalides.', e.getMessage());
