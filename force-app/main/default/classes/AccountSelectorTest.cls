@@ -1,6 +1,15 @@
 @isTest
 private class AccountSelectorTest {
 
+
+
+    // - Test pour vérifier que la méthode retourne bien un compte existant
+    // - Création et insertion d’un compte avec plusieurs champs remplis
+    // - Appel de la méthode getAccountById avec l’ID du compte inséré
+    // - Vérification que :
+    //    → l’ID retourné est bien le même que celui créé
+    //    → la valeur de BillingCountry est correcte
+
     @isTest
     static void testGetAccountById_OK() {
         Account acc = new Account(
@@ -21,6 +30,14 @@ private class AccountSelectorTest {
         System.assertEquals(acc.Id, result.Id);
         System.assertEquals('France', result.BillingCountry);
     }
+
+
+
+    // - Test pour vérifier le comportement quand l’ID donné n’existe pas
+    // - Appel de la méthode getAccountById avec un faux ID (non existant dans la base)
+    // - On attend une exception
+    // - Si aucune exception : le test échoue (System.assert(false))
+    // - Si exception levée : test réussi (System.assert(true))
 
     @isTest
     static void testGetAccountById_InexistantId() {

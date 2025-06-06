@@ -1,6 +1,13 @@
 @isTest
 private class OrderServiceTest {
 
+
+
+    // - Test qui vérifie que la méthode validateLivraison() fonctionne quand tout est correct
+    // - Création d'un prix transporteur avec zone "France"
+    // - Création d'une livraison avec la même zone et un prix
+    // - Appel de la méthode sans erreur attendue
+
     @isTest
     static void testValidateLivraison_OK() {
         Prix_Transporteur__c prix = new Prix_Transporteur__c(
@@ -18,6 +25,12 @@ private class OrderServiceTest {
         OrderService.validateLivraison(livraison);
         Test.stopTest();
     }
+
+
+
+    // - Test qui vérifie que la méthode lève une erreur si la zone est vide
+    // - Zone__c = '' => on attend une exception AuraHandledException
+    // - Vérification que le message d'erreur est bien celui attendu
 
     @isTest
     static void testValidateLivraison_ZoneVide() {
@@ -42,6 +55,12 @@ private class OrderServiceTest {
         Test.stopTest();
     }
 
+
+
+    // - Test qui vérifie que la méthode lève une erreur si Prix_Transporteur__c est null
+    // - La zone est renseignée mais pas le prix => on attend une exception
+    // - Vérification du message d’erreur
+
     @isTest
     static void testValidateLivraison_PrixTransporteurNull() {
         Livraison__c livraison = new Livraison__c(
@@ -59,6 +78,12 @@ private class OrderServiceTest {
         Test.stopTest();
     }
 
+
+
+    // - Test qui vérifie que isZoneValide() retourne true ou false selon la zone
+    // - 'Belgique' => true (dans la liste des zones valides)
+    // - 'Allemagne' => false (hors liste)
+
     @isTest
     static void testIsZoneValide() {
         Livraison__c livraisonOk = new Livraison__c(Zone__c = 'Belgique');
@@ -67,6 +92,13 @@ private class OrderServiceTest {
         System.assertEquals(true, OrderService.isZoneValide(livraisonOk));
         System.assertEquals(false, OrderService.isZoneValide(livraisonKo));
     }
+
+
+    // - Test valide pour un client "Particulier" qui commande 3 produits
+    // - Création produit + entrée de prix (Pricebook)
+    // - Création compte particulier + commande (Order)
+    // - Ajout de 3 produits (OrderItem)
+    // - Appel de validateOrders() => aucune exception attendue
 
     @isTest
     static void testValidateOrders_RulesOK_Particulier() {
@@ -105,6 +137,11 @@ private class OrderServiceTest {
         OrderService.validateOrders(new List<Order>{ ord });
         Test.stopTest();
     }
+
+
+    // - Test KO pour un particulier avec moins de 3 produits
+    // - Comme au-dessus mais avec 2 produits seulement
+    // - On attend une exception => message d’erreur doit mentionner le quota
 
     @isTest
     static void testValidateOrders_KO_Particulier_SousQuota() {
@@ -149,6 +186,12 @@ private class OrderServiceTest {
         Test.stopTest();
     }
 
+
+    // - Test pour vérifier qu’un Order sans compte associé est bloqué
+    // - Création d’une commande sans AccountId
+    // - Appel de validateOrders()
+    // - On vérifie que ça lève une erreur
+
     @isTest
     static void testValidateOrders_AccountNull() {
         Order ord = new Order(
@@ -166,6 +209,15 @@ private class OrderServiceTest {
         }
         Test.stopTest();
     }
+
+
+
+    // - Test qui vérifie que saveTransporterChoice() crée bien une Livraison
+    // - Création d’un compte et d’une commande
+    // - Création d’un Prix_Transporteur__c
+    // - Appel de saveTransporterChoice() avec les bons Ids
+    // - On récupère la Livraison__c créée et on vérifie :
+    //   - la zone, le transporteur, le mode de livraison
 
     @isTest
     static void testSaveTransporterChoice_OK() {
@@ -195,6 +247,12 @@ private class OrderServiceTest {
         System.assertEquals(prix.Id, livraison.Prix_Transporteur__c);
         System.assertEquals('Choisi manuellement', livraison.Mode_de_Livraison__c);
     }
+
+
+
+    // - Test pour vérifier que la méthode lève une erreur si les paramètres sont null
+    // - Appel avec des null en entrée
+    // - On attend une exception avec le message 'Paramètres invalides.'
 
     @isTest
     static void testSaveTransporterChoice_invalid() {
