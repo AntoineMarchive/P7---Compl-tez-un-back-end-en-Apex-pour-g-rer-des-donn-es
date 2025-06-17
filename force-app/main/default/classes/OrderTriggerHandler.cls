@@ -29,24 +29,14 @@ public with sharing class OrderTriggerHandler {
 
             if (acc != null && String.isNotBlank(acc.Type_de_Compte__c)) {
                 if (acc.Type_de_Compte__c == 'Professionnel' && nbProduits < 5) {
-                    throw new AuraHandledException('Commande invalide : les clients professionnels doivent commander au moins 5 produits différents.');
+                    throw new OrderTriggerHandlerException('Commande invalide : les clients professionnels doivent commander au moins 5 produits différents.');
                 } else if (acc.Type_de_Compte__c == 'Particulier' && nbProduits < 3) {
-                    throw new AuraHandledException('Commande invalide : les clients particuliers doivent commander au moins 3 produits différents.');
+                    throw new OrderTriggerHandlerException('Commande invalide : les clients particuliers doivent commander au moins 3 produits différents.');
                 }
 
-                // Création de la livraison si la commande est valide
-                Id prixTransporteurId = TransporterSelector.getBestPrixTransporteurIdForZone(acc.BillingCountry);
-                livraisons.add(new Livraison__c(
-                    Order__c = ord.Id,
-                    Mode_de_Livraison__c = ord.Transporter_Choice__c,
-                    Zone__c = acc.BillingCountry,
-                    Prix_Transporteur__c = prixTransporteurId
-                ));
             }
         }
 
-        if (!livraisons.isEmpty()) {
-            insert livraisons;
-        }
     }
+    public class OrderTriggerHandlerException extends Exception {}
 }

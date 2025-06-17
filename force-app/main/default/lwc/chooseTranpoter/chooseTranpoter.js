@@ -1,5 +1,4 @@
 import { LightningElement, api } from 'lwc';
-import hasPermission from '@salesforce/customPermission/Can_Send_Order';
 import saveTransporterChoice from '@salesforce/apex/OrderService.saveTransporterChoice';
 import getFilteredTransporters from '@salesforce/apex/TransporterSelector.getFilteredTransporters';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
@@ -10,7 +9,7 @@ export default class ChooseTransporter extends LightningElement {
     selectedOption = null; // 'fastest' ou 'cheapest'
     manualTransporterId = null;
     transporterList = [];
-    hasPermission = hasPermission;
+ 
 
     options = [
         { label: 'Option la plus rapide', value: 'fastest' },
@@ -45,10 +44,6 @@ export default class ChooseTransporter extends LightningElement {
     }
 
     handleSubmit() {
-        if (!this.hasPermission) {
-            this.showToast('Permission refusée', "Vous n'avez pas la permission d'envoyer une commande.", 'error');
-            return;
-        }
 
         const transporterId = this.manualTransporterId;
         if (!transporterId) {
